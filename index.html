@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>VeyrionSMP Enterprise Server Manager</title>
+<style>
+:root{--bg:#050d14;--panel:#0a1724;--panel2:#0f2233;--line:#1d3a4e;--text:#e8f4f8;--muted:#7c9cb0;--accent:#3bb0e6;--good:#4de396;--bad:#ff5c6c;--gold:#ffca43;--ram:#a259ff;--cpu:#00d2ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;user-select:none}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+header{position:sticky;top:0;z-index:20;background:#050d14f0;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 16px}
+.brand{display:flex;justify-content:space-between;align-items:center;max-width:1400px;margin:auto}
+h1{font-size:20px;margin:0;display:flex;align-items:center;gap:8px}.subtitle{font-size:11px;color:var(--muted);margin-top:2px}
+.status{display:flex;gap:6px;flex-wrap:wrap}.pill{padding:5px 10px;border:1px solid var(--line);border-radius:20px;background:var(--panel);font-size:11px;font-weight:600}
+nav{position:sticky;top:62px;z-index:19;display:flex;gap:6px;overflow-x:auto;padding:8px 12px;background:#06121be6;border-bottom:1px solid var(--line);scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button,.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px 12px;font-size:12px;white-space:nowrap;transition:0.2s}
+nav button:hover,.btn:hover{background:#15334c}nav button.active{background:#215f83!important;border-color:var(--accent)}
+main{max-width:1400px;margin:auto;padding:12px}.page{display:none}.page.show{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 4px 16px #0004}
+.big{font-size:22px;font-weight:800}.muted{color:var(--muted)}.good{color:var(--good)}.bad{color:var(--bad)}.gold{color:var(--gold)}.ram-color{color:var(--ram)}.cpu-color{color:var(--cpu)}
+.bar{height:8px;background:#102230;border-radius:10px;overflow:hidden;margin-top:6px}.fill{height:100%;background:var(--accent);width:0;transition:width 0.3s}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}.wrap{display:flex;gap:6px;flex-wrap:wrap}
+.item{padding:10px 0;border-bottom:1px solid #162f40}.item:last-child{border-bottom:0}
+.log{background:#040d14;border:1px solid #142a38;padding:8px;border-radius:6px;margin:4px 0;font-size:11px;font-family:monospace}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--line);background:#040e17;color:var(--text);border-radius:6px;margin:4px 0}
+textarea{min-height:90px;resize:vertical}.tag{font-size:10px;padding:3px 6px;border-radius:4px;background:#133042;border:1px solid #23526e}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #162f40;text-align:left;font-size:12px}
+.toast{position:fixed;right:12px;bottom:12px;z-index:100;background:#0d2838;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;display:none;font-size:13px;box-shadow:0 6px 20px #0008}
+.modal{position:fixed;inset:0;background:#000b;z-index:90;display:none;align-items:center;justify-content:center;padding:15px}.modal.show{display:flex}
+.modalbox{width:min(600px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+hr{border:0;border-top:1px solid var(--line);margin:12px 0}.danger{border-color:var(--bad)}.warn{border-color:var(--gold)}
+.server-card{border:1px solid var(--line);background:linear-gradient(135deg,#0d2030,#091521);border-radius:12px;padding:14px;margin:10px 0}
+.server-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px #3bb0e655}
+.server-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.server-meta div{background:#06121b;border:1px solid #183448;border-radius:8px;padding:9px}
+@keyframes notifyIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand">
+<div><h1>⚔️ <span id="brandName">VeyrionSMP Enterprise</span></h1><div class="subtitle">Sunucu Yönetimi & Donanım Sanallaştırma</div></div>
+<div class="status">
+<span class="pill gold">🌐 TOTAL MONEY: <b id="headTotalMoney">$0</b></span>
+<span class="pill good" id="serverStatus">● ONLINE</span>
+<span class="pill">TPS <b id="headTPS">20.00</b></span>
+<span class="pill">RAM <b id="headRAM">2/2 GB</b></span>
+<span class="pill">IP <b id="headIP">Veyrionsmp.net</b></span>
+</div>
+</div>
+</header>
+
+<nav>
+<button onclick="showPage('servers',this)">➕ Sunucu</button>
+<button class="active" onclick="showPage('dashboard',this)">🏠 Panel</button>
+<button onclick="showPage('hardware',this)">🖥️ RAM / Donanım</button>
+<button onclick="showPage('console',this)">💻 Konsol</button>
+<button onclick="showPage('players',this)">👥 Oyuncular</button>
+<button onclick="showPage('world',this)">🌍 Dünya</button>
+<button onclick="showPage('plugins',this)">🧩 Pluginler</button>
+<button onclick="showPage('ranks',this)">👑 Rütbeler</button>
+<button onclick="showPage('economy',this)">💰 Ekonomi</button>
+<button onclick="showPage('shops',this)">🛒 Shop & AH</button>
+<button onclick="showPage('quests',this)">📜 Görevler</button>
+<button onclick="showPage('events',this)">🎉 Etkinlik</button>
+<button onclick="showPage('analytics',this)">📊 İstatistik</button>
+<button onclick="showPage('serverSettings',this)">🌐 Sunucu Ayarları</button>
+<button onclick="showPage('monitor',this)">📈 Sistem</button>
+<button onclick="showPage('settings',this)">⚙️ Ayarlar</button>
+</nav>
+
+<main>
+<section id="servers" class="page">
+<div class="card">
+<div class="row"><div><h2>➕ Sunucu Yönetimi</h2><p class="muted">Kayıtlı sunucularını yönet ve yeni bağımsız sunucu profili oluştur.</p></div><span class="tag" id="serverCount">1 SUNUCU</span></div>
+<hr><h3>🗂️ SUNUCULAR</h3>
+<div id="serverList"></div>
+<div class="wrap"><button class="btn" onclick="toggleAddServer()">➕ Sunucu Ekle</button></div>
+<div id="addServerForm" class="card" style="display:none;margin-top:14px">
+<h3>🚀 Yeni Sıfır Sunucu Kur</h3>
+<label>Sunucu ismi</label><input id="newServerName" placeholder="Örn: Veyrion 2" maxlength="32">
+<label>Sunucu IP</label><input id="newServerIP" placeholder="Örn: play2.veyrionsmp.net">
+<label>Sunucu sürümü</label><input id="newServerVersion" placeholder="Örn: 26.2">
+<label>Sunucu yazılımı</label><select id="newServerSoftware"><option value="">Yazılım seç</option><option>Paper</option><option>Purpur</option><option>Spigot</option><option>Fabric</option><option>Forge</option><option>Vanilla</option><option>Velocity</option></select>
+<div class="wrap"><button class="btn" onclick="createServerProfile()">🚀 SUNUCUYU KUR</button><button class="btn" onclick="toggleAddServer(false)">İptal</button></div>
+<p class="muted" style="font-size:11px">Yeni sunucu tamamen sıfır verilerle kurulur ancak tüm donanım/plugin yükseltmelerinde ortak Total Money kasası kullanılır.</p>
+</div>
+</div>
+</section>
+
+<section id="dashboard" class="page show">
+<div class="grid">
+<div class="card"><div class="muted">TOTAL MONEY 💰 (Ortak Kasa)</div><div class="big gold" id="dashTotalMoney">$0</div></div>
+<div class="card"><div class="muted">Ayrılan RAM</div><div class="big ram-color" id="ramText">2 GB</div><div class="bar"><div class="fill" id="ramFill" style="background:var(--ram)"></div></div></div>
+<div class="card"><div class="muted">vCPU Gücü</div><div class="big cpu-color" id="cpuText">1 vCore</div></div>
+<div class="card"><div class="muted">Online Oyuncu</div><div class="big" id="online">0</div><div class="bar"><div class="fill" id="onlineFill"></div></div><div class="muted" style="font-size:10px">RAM + donanıma göre kapasite: <span id="capacityHint">40</span></div></div>
+<div class="card"><div class="muted">Sunucu Seviyesi</div><div class="big" id="serverLevel">1</div><div id="xpText" class="muted" style="font-size:11px">0/100 XP</div></div>
+<div class="card"><div class="muted">Uptime</div><div class="big" id="uptime">0 dk</div></div>
+</div><br>
+<div class="grid two">
+<div class="card"><h3>🩺 Sistem Kaynak Metrikleri</h3><div id="health"></div><hr>
+<div class="wrap"><button class="btn" onclick="optimize()">⚡ RAM Temizle</button><button class="btn" onclick="restart()">🔄 Restart</button><button class="btn" onclick="backup()">💾 Backup Al</button></div></div>
+<div class="card"><h3>🎯 Yönetim Hedefleri</h3><div id="goals"></div></div>
+</div><br>
+<div class="card"><h3>📢 Canlı Sistem Logları</h3><div id="recentLogs"></div></div>
+</section>
+
+<section id="hardware" class="page">
+<div class="card">
+<h2>⚡ Sanal Donanım Yükseltme Marketi</h2>
+<p class="muted">Sunucunun fiziksel/sanal donanımlarını geliştir (Ortak Total Money kasasından harcanır).</p>
+<hr>
+<div class="grid two">
+<div class="card"><h3>🧠 CPU / İşlemci</h3><p class="muted">Sunucunun beyni. Çok çekirdekli işlem gücü TPS ve oyuncu işlemlerini artırır.</p><p>Model: <b id="hwCpuModel">Xeon E-2300</b></p><p>Çekirdek: <b class="cpu-color" id="curCPU">1 vCore</b></p><p>CPU yükü: <b id="cpuLoad">0%</b></p><button class="btn" onclick="upgradeCPU()">⬆️ CPU +1 vCore (<span id="cpuCost">$850</span>)</button></div>
+<div class="card"><h3>🧮 RAM / Bellek</h3><p class="muted">Verilerin geçici olarak tutulduğu alan. ECC RAM daha kararlı sunucu belleğini temsil eder.</p><p>Tip: <b>ECC DDR5</b></p><p>Kapasite: <b class="ram-color" id="curRam">2 GB</b></p><p>ECC bellek: <b>Aktif</b> · Oyuncu kapasitesi: <b id="playerCapacity">40</b></p><button class="btn" onclick="upgradeRAM()">⬆️ RAM +2 GB (<span id="ramCost">$700</span>)</button></div>
+<div class="card"><h3>💾 Depolama</h3><p class="muted">Kalıcı veriler, dünya dosyaları ve yedekler burada tutulur.</p><p>Disk: <b id="storageModel">NVMe SSD 256 GB</b></p><p>Hız seviyesi: <b id="storageSpeed">1</b></p><button class="btn" onclick="upgradeStorage()">⬆️ Depolama yükselt (<span id="storageCost">$900</span>)</button></div>
+<div class="card"><h3>🔧 Anakart</h3><p class="muted">CPU, RAM ve diğer donanımları birbirine bağlar.</p><p>Seviye: <b id="motherboardLevel">1</b></p><p>RAM slotu: <b id="ramSlots">2</b></p><button class="btn" onclick="upgradeMotherboard()">⬆️ Anakart yükselt (<span id="motherboardCost">$1200</span>)</button></div>
+<div class="card"><h3>⚡ PSU / Güç Kaynağı</h3><p class="muted">Sisteme elektrik sağlar. Üst seviyelerde redundant çift PSU açılır.</p><p>Güç: <b id="psuPower">500W</b></p><p>Yedeklilik: <b id="psuRedundant">Yok</b></p><button class="btn" onclick="upgradePSU()">⬆️ PSU yükselt (<span id="psuCost">$750</span>)</button></div>
+<div class="card"><h3>🌐 NIC / Ağ Kartı</h3><p class="muted">Sunucunun ağ bağlantı kapasitesini belirler.</p><p>Bağlantı: <b id="nicSpeed">1 Gbps</b></p><p>Ağ yükü: <b id="networkLoad">0%</b></p><button class="btn" onclick="upgradeNIC()">⬆️ NIC yükselt (<span id="nicCost">$1000</span>)</button></div>
+<div class="card"><h3>❄️ Soğutma Sistemi</h3><p class="muted">Fan ve radyatör kapasitesi sıcaklığı kontrol eder.</p><p>Seviye: <b id="coolingLevel">1</b></p><p>Sıcaklık: <b id="temperature">42°C</b></p><button class="btn" onclick="upgradeCooling()">⬆️ Soğutma yükselt (<span id="coolingCost">$650</span>)</button></div>
+<div class="card"><h3>🧭 Chunk Görüş Mesafesi</h3><p class="muted">Sunucunun simülasyondaki chunk ayarı. Değer 2 ile 32 arasında seçilebilir.</p><p>Chunk: <b class="good" id="chunkValue">8</b></p><input id="chunkSlider" type="range" min="2" max="32" step="1" value="8" oninput="setChunkDistance(this.value)"><div class="row"><span class="muted">2 Chunk</span><span class="muted">32 Chunk</span></div></div>
+</div>
+</div>
+</section>
+
+<section id="console" class="page"><div class="grid two"><div class="card"><h3>🖥️ Canlı Konsol</h3><textarea id="consoleInput" placeholder="Örn: say VeyrionSMP Güncellendi!"></textarea><button class="btn" onclick="runCommand()">Komut Çalıştır</button></div><div class="card"><h3>⚙️ Hızlı Makrolar</h3><div class="wrap"><button class="btn" onclick="cmd('say VeyrionSMP Aktif!')">/say</button><button class="btn" onclick="cmd('save-all')">/save-all</button><button class="btn" onclick="cmd('list')">/list</button><button class="btn" onclick="cmd('time set day')">/time set day</button><button class="btn" onclick="cmd('weather clear')">/weather clear</button></div></div></div><br><div class="card"><h3>📜 Tüm Log Akışı</h3><div id="fullLogs"></div></div></section>
+<section id="players" class="page"><div class="card"><div class="row"><div><h2>👥 Oyuncu Yönetimi</h2></div><button class="btn" onclick="attractPlayers()">📣 Reklam Yap ($100)</button></div><hr><div class="grid two"><div><input id="playerSearch" placeholder="Oyuncu ara..." oninput="renderPlayers()"></div><div class="wrap"><button class="btn" onclick="massReward()">🎁 Herkese $50 Dağıt</button></div></div><table><thead><tr><th>Oyuncu</th><th>Rütbe</th><th>Seviye</th><th>Bakiye</th><th>Ping</th><th>Durum</th><th>Eylem</th></tr></thead><tbody id="playerTable"></tbody></table></div></section>
+<section id="world" class="page"><div class="grid"><div class="card"><h3>🌲 Spawn Yapısı</h3><p>Seviye <b id="spawnLv">1</b></p><button class="btn" onclick="upgradeWorld('spawn')">Geliştir (<span id="spawnCost">$500</span>)</button></div><div class="card"><h3>🏪 Pazar Alanı</h3><p>Seviye <b id="marketLv">0</b></p><button class="btn" onclick="upgradeWorld('market')">Geliştir (<span id="marketCost">$700</span>)</button></div><div class="card"><h3>⚔️ PvP Arena</h3><p>Seviye <b id="pvpLv">0</b></p><button class="btn" onclick="upgradeWorld('pvp')">Geliştir (<span id="pvpCost">$900</span>)</button></div><div class="card"><h3>🗺️ Dünya Ayarları</h3><p>Zaman: <b id="worldTimeText">Gündüz</b></p><p>Hava: <b id="worldWeatherText">Açık</b></p><p>Mob yoğunluğu: <b id="mobDensityText">Normal</b></p><div class="wrap"><button class="btn" onclick="worldAction('day')">☀️ Gündüz</button><button class="btn" onclick="worldAction('night')">🌙 Gece</button><button class="btn" onclick="worldAction('rain')">🌧️ Yağmur</button><button class="btn" onclick="worldAction('clear')">🌤️ Açık</button><button class="btn" onclick="worldAction('storm')">⛈️ Fırtına</button></div><div class="wrap"><button class="btn" onclick="changeMobDensity(-1)">➖ Mob</button><button class="btn" onclick="changeMobDensity(1)">➕ Mob</button><button class="btn" onclick="createWorld()">🌍 Yeni Dünya</button></div></div></div><div class="grid two" style="margin-top:10px"><div class="card"><h3>🔊 Dünya Sesleri</h3><p class="muted">Dünya olaylarına özel kısa sesler. İlk dokunuşta ses sistemi etkinleşir.</p><div class="wrap"><button class="btn" onclick="playWorldSound('join')">👤 Oyuncu Girişi</button><button class="btn" onclick="playWorldSound('level')">✨ Seviye</button><button class="btn" onclick="playWorldSound('coin')">💰 Para</button><button class="btn" onclick="playWorldSound('rain')">🌧️ Yağmur</button><button class="btn" onclick="playWorldSound('alert')">🚨 Uyarı</button><button class="btn" onclick="playWorldSound('shutdown')">🛑 Kapanış</button></div></div><div class="card"><h3>🌍 Dünyalar</h3><div id="worldList"></div></div></div></section>
+<section id="plugins" class="page"><div class="card"><h2>🧩 Plugin Yöneticisi</h2><div id="pluginList"></div></div></section>
+<section id="ranks" class="page"><div class="card"><h2>👑 LuckPerms Rütbe Sistemi</h2><div id="rankList"></div></div></section>
+<section id="economy" class="page"><div class="card"><h2>💰 Banka ve Ekonomi</h2><p>Oyuncu Başı Gelir: <b id="perPlayer">$5</b></p><button class="btn" onclick="boostEconomy()">📈 Gelir Oranını Artır ($400)</button></div></section>
+<section id="shops" class="page"><div class="card"><h2>🛒 Market & Açık Artırma</h2><div id="shopList"></div></div></section>
+<section id="quests" class="page"><div class="card"><h2>📜 Görevler</h2><div id="questList"></div></div></section>
+<section id="events" class="page"><div class="grid two"><div class="card"><h2>🎉 Sunucu Etkinlikleri</h2><div id="eventList"></div></div><div class="card"><h2>🎲 Rastgele Olaylar</h2><p class="muted">Sunucu açıkken bazen beklenmedik olaylar yaşanır.</p><div id="randomEventBox">Henüz rastgele olay yok.</div><button class="btn" onclick="triggerRandomEvent(true)">🎲 Olay Tetikle</button></div></div></section>
+<section id="analytics" class="page"><div class="card"><h2>📊 Detaylı İstatistikler</h2><table id="statsTable"></table></div></section>
+<section id="serverSettings" class="page"><div class="grid two"><div class="card"><h2>🌐 Sunucu Ayarları</h2><label>Sunucu Adı</label><input id="cfgName" value="Veyrion"><label>Sunucu IP / Alan Adı</label><input id="cfgIP" value="Veyrionsmp.net" placeholder="play.ornek.com"><label>Port</label><input id="cfgPort" type="number" value="25565" min="1" max="65535"><label>MOTD</label><textarea id="cfgMotd">⚔️ Veyrion'a Hoş Geldiniz!</textarea><div class="grid two"><div><label>Online Mode</label><select id="cfgOnline"><option value="true">Açık</option><option value="false">Kapalı</option></select></div><div><label>PvP</label><select id="cfgPvp"><option value="true">Açık</option><option value="false">Kapalı</option></select></div><div><label>Chat</label><select id="cfgChat"><option value="true">Açık</option><option value="false">Kapalı</option></select></div><div><label>Komutlar</label><select id="cfgCommands"><option value="true">Açık</option><option value="false">Kapalı</option></select></div></div><button class="btn" onclick="saveServerSettings()">💾 Ayarları Kaydet</button></div><div class="card"><h2>🔌 Sunucu Kontrolü</h2><p>Durum: <b id="serverStateText" class="good">ONLINE</b></p><p>IP: <b id="serverEndpoint">Veyrionsmp.net:25565</b></p><p>Bekleyen oyuncu kuyruğu: <b id="joinQueueCount">0</b></p><div class="wrap"><button class="btn danger" onclick="shutdownServer()">🛑 Sunucuyu Kapat</button><button class="btn" onclick="startServer()">▶️ Sunucuyu Aç</button><button class="btn" onclick="restartServer()">🔄 Restart</button></div><hr><p class="muted">Sunucu kapatıldığında çevrimiçi oyuncular kuyruğa alınır. Sunucu açılınca oyuncular otomatik olarak <b>sıra sıra</b> geri girer.</p></div></div></section>
+<section id="monitor" class="page"><div class="grid"><div class="card"><h2>📈 Canlı Sistem</h2><div id="monitorMetrics"></div></div><div class="card"><h2>🌐 Ağ Trafiği</h2><div id="networkMetrics"></div></div><div class="card"><h2>💾 Depolama</h2><div id="diskMetrics"></div></div><div class="card"><h2>⚡ Elektrik</h2><div id="electricMetrics"></div><button class="btn" onclick="payElectricity()">💳 Faturayı Öde</button></div><div class="card"><h2>🛡️ Güvenlik</h2><div id="securityMetrics"></div></div></div></section>
+<section id="settings" class="page"><div class="grid two"><div class="card"><h2>⚙️ Genel Ayarlar</h2><label>Otomatik gelir</label><select id="cfgIncome"><option value="true">Açık</option><option value="false">Kapalı</option></select><label>Oyuncu otomatik giriş/çıkış simülasyonu</label><select id="cfgAutoPlayers"><option value="true">Açık</option><option value="false">Kapalı</option></select><label>Log seviyesi</label><select id="cfgLog"><option>Detaylı</option><option>Normal</option><option>Sadece hata</option></select><button class="btn" onclick="saveGeneralSettings()">💾 Genel Ayarları Kaydet</button></div><div class="card"><h2>💾 Veri & Yedek</h2><button class="btn" onclick="exportSave()">⬇️ JSON Yedeği İndir</button><button class="btn" onclick="backup()">💾 Yedek Al</button><button class="btn danger" onclick="resetGame()">🗑️ Tüm Verileri Sıfırla</button><p class="muted">Kayıtlar tarayıcıda saklanır.</p></div></div></section>
+</main>
+<div id="modal" class="modal"><div class="modalbox"><div class="row"><h2 id="modalTitle">Oyuncu</h2><button class="btn" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const defaultPlayers=[
+{name:"Ahmet",rank:"OYUNCU",level:7,money:320,ping:42,online:true},{name:"Mert",rank:"VIP",level:12,money:1450,ping:58,online:true},{name:"Deniz",rank:"OYUNCU",level:4,money:180,ping:76,online:true},{name:"Efe",rank:"VIP",level:9,money:860,ping:51,online:true},{name:"Arda",rank:"OYUNCU",level:6,money:410,ping:63,online:true},{name:"Kerem",rank:"MOD",level:18,money:2350,ping:39,online:true},{name:"Emir",rank:"OYUNCU",level:3,money:95,ping:81,online:true},{name:"Can",rank:"VIP",level:14,money:1780,ping:47,online:true},{name:"Berk",rank:"OYUNCU",level:5,money:260,ping:69,online:true},{name:"Yusuf",rank:"VIP",level:10,money:1120,ping:55,online:true},{name:"Kaan",rank:"OYUNCU",level:2,money:75,ping:88,online:false},{name:"Burak",rank:"MOD",level:21,money:3100,ping:44,online:true}];
+const pluginData=[["EssentialsX","Temel komutlar, teleport, spawn",500],["LuckPerms","Rütbe ve yetki yönetimi",750],["Vault","Ekonomi ve izin köprüsü",600],["PlaceholderAPI","Dinamik placeholder sistemi",550],["TAB","Skor tablosu ve prefix",650],["EconomyShopGUI","Market arayüzü",900],["AuctionHouse","Oyuncu açık artırması",1100],["PlayerWarps","Oyuncu warp sistemi",950],["WorldEdit","Hızlı dünya düzenleme",1300],["WorldGuard","Bölge koruması",1400],["CoreProtect","Blok/log geri alma",1500],["AntiCheat","Gelişmiş hile koruması",1600],["ViaVersion","Farklı sürüm desteği",1200],["ProtocolLib","Protokol API",1000],["spark","Performans profilleme",850],["Quests","Görev sistemi",1000],["CrateReloaded","Kasa sistemi",1250],["Jobs","Meslek ve maaş sistemi",1050],["Minions","Otomatik üretim",1800],["DiscordSRV","Discord entegrasyonu",1750],["BackupPlus","Otomatik yedekleme",900],["Maintenance","Bakım modu",700],["PlayerStats","Detaylı oyuncu istatistikleri",800],["CombatLogX","Savaş çıkışı koruması",1150]];
+
+let S = load();
+ensureSystemIntegrity();
+
+function createFreshServerData(id, name, ip, version, software){
+    return {
+        id: id,
+        name: name,
+        ip: ip,
+        version: version || "26.2",
+        software: software || "Paper",
+        money: 5000,
+        ram: 2,
+        cpu: 1,
+        storage: 1,
+        motherboard: 1,
+        psu: 1,
+        nic: 1,
+        cooling: 1,
+        chunkDistance: 8,
+        level: 1,
+        xp: 0,
+        uptime: 0,
+        totalIncome: 0,
+        visits: 0,
+        backups: 0,
+        plugins: [],
+        players: defaultPlayers.map(x=>({...x})),
+        logs: [`[BOOT] ${name} sunucusu başarıyla kuruldu.`, "[HW] 2 GB RAM / 1 vCPU tahsis edildi."],
+        spawn: 1, market: 0, pvp: 0, eco: 0,
+        questClaimed: {},
+        eventCount: 0,
+        shopSales: 0,
+        server: { online: true, name: name, ip: ip, port: 25565, motd: `⚔️ ${name} sunucusuna hoş geldiniz!`, onlineMode: true, pvp: true, chat: true, commands: true },
+        queue: [],
+        autoIncome: true,
+        autoPlayers: true,
+        logLevel: "Detaylı",
+        advertising: 0, joins: 0, leaves: 0, bans: 0, kicks: 0,
+        security: { antiCheat: false, worldGuard: false, coreProtect: false },
+        networkIn: 0, networkOut: 0, diskUsed: 5,
+        electricity: { bill: 0, kwh: 0, lastCharge: 0 },
+        worlds: [{ name: "world", type: "Survival", level: 1 }],
+        worldTime: "day", weather: "clear", mobDensity: 1, randomEvents: 0,
+        ranks: []
+    };
+}
+
+function load(){
+    try {
+        const x = JSON.parse(localStorage.getItem("veyrion_ent_v7"));
+        if(x && x.serversData && x.activeServerId) return x;
+    } catch(e){ console.error(e); }
+
+    const defId = "vyr-default";
+    const initSrv = createFreshServerData(defId, "Veyrion", "Veyrionsmp.net", "26.2", "Paper");
+    return {
+        saveVersion: 7,
+        activeServerId: defId,
+        serversMeta: [{ id: defId, name: "Veyrion", ip: "Veyrionsmp.net", version: "26.2", software: "Paper" }],
+        serversData: { [defId]: initSrv }
+    };
+}
+
+function ensureSystemIntegrity(){
+    if(!S.serversMeta || !S.serversMeta.length){
+        S.serversMeta = [{ id: "vyr-default", name: "Veyrion", ip: "Veyrionsmp.net", version: "26.2", software: "Paper" }];
+    }
+    if(!S.serversData) S.serversData = {};
+    if(!S.activeServerId || !S.serversData[S.activeServerId]){
+        S.activeServerId = S.serversMeta[0].id;
+    }
+    S.serversMeta.forEach(m => {
+        if(!S.serversData[m.id]){
+            S.serversData[m.id] = createFreshServerData(m.id, m.name, m.ip, m.version, m.software);
+        } else {
+            let d = S.serversData[m.id];
+            if(d.storage === undefined) d.storage = 1;
+            if(d.motherboard === undefined) d.motherboard = 1;
+            if(d.psu === undefined) d.psu = 1;
+            if(d.nic === undefined) d.nic = 1;
+            if(d.cooling === undefined) d.cooling = 1;
+            if(d.ram === undefined) d.ram = 2;
+            if(d.cpu === undefined) d.cpu = 1;
+        }
+    });
+}
+
+function getActiveData(){
+    return S.serversData[S.activeServerId];
+}
+
+function calculateTotalMoney(){
+    let total = 0;
+    for(let id in S.serversData){
+        total += (S.serversData[id].money || 0);
+    }
+    return total;
+}
+
+function spendTotalMoney(amount){
+    let total = calculateTotalMoney();
+    if(total < amount) return false;
+    
+    let remaining = amount;
+    const active = getActiveData();
+    if(active.money >= remaining){
+        active.money -= remaining;
+        return true;
+    } else {
+        remaining -= active.money;
+        active.money = 0;
+    }
+
+    for(let id in S.serversData){
+        if(id === S.activeServerId) continue;
+        let srv = S.serversData[id];
+        if(srv.money >= remaining){
+            srv.money -= remaining;
+            remaining = 0;
+            break;
+        } else {
+            remaining -= srv.money;
+            srv.money = 0;
+        }
+    }
+    return true;
+}
+
+function save(){
+    try {
+        S.saveVersion = 7;
+        S.lastSaved = Date.now();
+        localStorage.setItem("veyrion_ent_v7", JSON.stringify(S));
+    } catch(e){ console.error("Kayıt hatası", e); }
+}
+function saveNow(){ save(); }
+
+function ensureHardware(){
+    const data = getActiveData();
+    data.storage = data.storage || 1;
+    data.motherboard = data.motherboard || 1;
+    data.psu = data.psu || 1;
+    data.nic = data.nic || 1;
+    data.cooling = data.cooling || 1;
+    data.ram = data.ram || 2;
+    data.cpu = data.cpu || 1;
+    data.chunkDistance = Math.max(2, Math.min(32, Number(data.chunkDistance) || 8));
+}
+
+function ensurePlayers(){
+    const data = getActiveData();
+    if(!Array.isArray(data.players)) data.players = [];
+    if(!data.server) data.server = { online: true, name: data.name, ip: data.ip, port: 25565, motd: "⚔️ Hoş Geldiniz!", onlineMode: true, pvp: true, chat: true, commands: true };
+    if(!Array.isArray(data.queue)) data.queue = [];
+    if(!data.security) data.security = { antiCheat: false, worldGuard: false, coreProtect: false };
+    if(!data.electricity) data.electricity = { bill: 0, kwh: 0, lastCharge: 0 };
+    if(!Array.isArray(data.worlds) || !data.worlds.length) data.worlds = [{ name: "world", type: "Survival", level: 1 }];
+    if(!data.worldTime) data.worldTime = "day";
+    if(!data.weather) data.weather = "clear";
+    if(!data.mobDensity) data.mobDensity = 1;
+    data.online = data.players.filter(p => p.online).length;
+}
+
+function getMaxPlayers(){
+    const d = getActiveData();
+    const ramCap = Math.max(10, Math.floor(d.ram * 20));
+    const cpuFactor = 0.65 + Math.min(1.35, d.cpu / 8);
+    const nicFactor = 0.75 + Math.min(1.25, d.nic / 4);
+    const coolingFactor = 0.85 + Math.min(0.35, d.cooling / 10);
+    return Math.max(10, Math.floor(ramCap * cpuFactor * nicFactor * coolingFactor));
+}
+
+function money(n){ return "$" + Math.floor(n).toLocaleString("tr-TR"); }
+function toast(t){ const e=$("toast"); e.textContent=t; e.style.display="block"; setTimeout(()=>e.style.display="none", 1900); }
+function log(t){ const d=getActiveData(); d.logs.unshift(t); if(d.logs.length>30) d.logs.pop(); }
+
+function showPage(id,b){
+    document.querySelectorAll(".page").forEach(x=>x.classList.remove("show"));
+    $(id).classList.add("show");
+    document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+    (b||document.querySelector(`nav button[onclick*="'${id}'"]`))?.classList.add("active");
+    render();
+}
+
+function toggleAddServer(force){
+    const f=$("addServerForm");
+    f.style.display=(force===undefined?f.style.display==="none":!force)?"block":"none";
+}
+
+function renderServers(){
+    const list=$("serverList"); if(!list) return;
+    $("serverCount").textContent = S.serversMeta.length + " SUNUCU";
+    list.innerHTML = S.serversMeta.map(m => {
+        const d = S.serversData[m.id];
+        return `<div class="server-card ${m.id === S.activeServerId ? 'selected' : ''}">
+            <div class="row">
+                <div><h3 style="margin:0 0 5px">🖥️ ${escapeHTML(m.name)}</h3><span class="muted">${escapeHTML(m.ip)}</span></div>
+                <span class="tag">${m.id === S.activeServerId ? 'AKTİF' : 'KAYITLI'}</span>
+            </div>
+            <div class="server-meta">
+                <div><small class="muted">Sürüm</small><br><b>${escapeHTML(m.version || '26.2')}</b></div>
+                <div><small class="muted">Yazılım</small><br><b>${escapeHTML(m.software || 'Paper')}</b></div>
+                <div><small class="muted">Bakiye</small><br><b class="gold">${money(d ? d.money : 0)}</b></div>
+                <div><small class="muted">Oyuncu</small><br><b>${d ? d.players.filter(p=>p.online).length : 0}</b></div>
+                <div><small class="muted">RAM</small><br><b>${d ? d.ram : 2} GB</b></div>
+            </div>
+            <div class="wrap">
+                <button class="btn" onclick="goToServer('${m.id}')">➡️ Panele Git</button>
+                <button class="btn" onclick="editProfileHardware('${m.id}')">🖥️ Donanım</button>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+function escapeHTML(v){ return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function createServerProfile(){
+    const name=$("newServerName").value.trim(), ip=$("newServerIP").value.trim(), version=$("newServerVersion").value.trim(), software=$("newServerSoftware").value;
+    if(!name||!ip||!version||!software) return toast("❗ Tüm alanları doldur.");
+    
+    const id = "srv-" + Date.now();
+    const meta = { id, name, ip, version, software };
+    const freshData = createFreshServerData(id, name, ip, version, software);
+    
+    S.serversMeta.push(meta);
+    S.serversData[id] = freshData;
+    S.activeServerId = id;
+    
+    log(`[SERVER] ${name} adlı yeni sıfır sunucu profili kuruldu.`);
+    $("newServerName").value = $("newServerIP").value = $("newServerVersion").value = "";
+    $("newServerSoftware").value = "";
+    $("addServerForm").style.display = "none";
+    
+    toast("🚀 Yeni sunucu kuruldu!");
+    renderServers();
+    showPage("dashboard", document.querySelector('nav button[onclick*="dashboard"]'));
+}
+
+function goToServer(id){
+    if(!S.serversData[id]) return;
+    S.activeServerId = id;
+    const data = getActiveData();
+    log(`[SERVER] Sunucu değiştirildi: ${data.name}`);
+    renderServers();
+    showPage("dashboard", document.querySelector('nav button[onclick*="dashboard"]'));
+    toast(data.name + " paneli açıldı.");
+}
+
+function editProfileHardware(id){
+    if(S.activeServerId !== id) goToServer(id);
+    showPage("hardware", document.querySelector('nav button[onclick*="hardware"]'));
+}
+
+function setChunkDistance(v){
+    const d = getActiveData();
+    d.chunkDistance = Math.max(2, Math.min(32, Number(v) || 8));
+    $("chunkValue").textContent = d.chunkDistance;
+    save();
+}
+
+/* --- TAMAMEN DÜZELTİLEN YÜKSELTME FONKSİYONLARI --- */
+function upgradeRAM(){
+    const d = getActiveData();
+    let cost = d.ram * 350;
+    if(spendTotalMoney(cost)){
+        d.ram += 2;
+        log(`[HARDWARE] RAM ${d.ram} GB oldu.`);
+        toast("🧠 RAM Yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradeCPU(){
+    const d = getActiveData();
+    let cost = d.cpu * 850;
+    if(spendTotalMoney(cost)){
+        d.cpu++;
+        log(`[HARDWARE] CPU ${d.cpu} vCore oldu.`);
+        toast("🔲 vCPU Yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradeStorage(){
+    const d = getActiveData();
+    let cost = d.storage * 900;
+    if(spendTotalMoney(cost)){
+        d.storage++;
+        log(`[HARDWARE] Depolama seviye ${d.storage} oldu.`);
+        toast("💾 Depolama yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradeMotherboard(){
+    const d = getActiveData();
+    let cost = d.motherboard * 1200;
+    if(spendTotalMoney(cost)){
+        d.motherboard++;
+        log(`[HARDWARE] Anakart seviye ${d.motherboard} oldu.`);
+        toast("🔧 Anakart yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradePSU(){
+    const d = getActiveData();
+    let cost = d.psu * 750;
+    if(spendTotalMoney(cost)){
+        d.psu++;
+        log(`[HARDWARE] PSU seviye ${d.psu} oldu.`);
+        toast("⚡ PSU yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradeNIC(){
+    const d = getActiveData();
+    let cost = d.nic * 1000;
+    if(spendTotalMoney(cost)){
+        d.nic++;
+        log(`[HARDWARE] NIC seviye ${d.nic} oldu.`);
+        toast("🌐 Ağ kartı yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function upgradeCooling(){
+    const d = getActiveData();
+    let cost = d.cooling * 650;
+    if(spendTotalMoney(cost)){
+        d.cooling++;
+        log(`[HARDWARE] Soğutma seviye ${d.cooling} oldu.`);
+        toast("❄️ Soğutma yükseltildi!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function attractPlayers(){
+    const d = getActiveData();
+    if(!d.server.online) return toast("❌ Sunucu kapalı.");
+    if(!spendTotalMoney(100)) return toast("❌ Yeterli para yok!");
+    d.advertising++;
+    const n = Math.floor(Math.random() * 6) + 2 + Math.min(12, d.advertising);
+    for(let i = 0; i < n && d.online < getMaxPlayers(); i++){
+        const p = newBotPlayer(); p.online = true; d.players.push(p); d.online++; d.joins++; d.visits++;
+        log(`[JOIN] ${p.name} katıldı.`);
+    }
+    toast(`📣 +${n} oyuncu geldi.`);
+    render();
+}
+
+let joinTimer = null;
+function newBotPlayer(){
+    const d = getActiveData();
+    const names = ["Atlas","Mavi","Rüzgar","Nova","Luna","Pixel","Shadow","CraftTR","Ege","Bora","Kuzey","Doruk","Alp","Yiğit","Baran","Emre","Tuna"];
+    let base = names[Math.floor(Math.random() * names.length)], name = base, i = 2;
+    while(d.players.some(p => p.name === name)) name = base + i++;
+    return { name, rank: Math.random() < .18 ? "VIP" : "OYUNCU", level: Math.floor(Math.random() * 20) + 1, money: Math.floor(Math.random() * 1800) + 50, ping: Math.floor(Math.random() * 80) + 25, online: false };
+}
+
+function shutdownServer(){
+    const d = getActiveData();
+    if(!d.server.online) return toast("ℹ️ Sunucu kapalı.");
+    clearTimeout(joinTimer);
+    d.queue = d.players.filter(p => p.online).map(p => p.name);
+    d.players.forEach(p => { if(p.online) p.online = false; });
+    d.online = 0; d.server.online = false;
+    log(`[SERVER] Sunucu kapatıldı.`);
+    toast(`🛑 Sunucu kapandı.`);
+    render();
+}
+
+function startServer(){
+    const d = getActiveData();
+    if(d.server.online) return toast("ℹ️ Sunucu açık.");
+    d.server.online = true;
+    log("[SERVER] Sunucu başlatılıyor...");
+    toast("▶️ Sunucu açılıyor...");
+    render();
+    setTimeout(() => { joinNext(); }, 700);
+}
+
+function joinNext(){
+    const d = getActiveData();
+    if(!d.server.online || !d.queue.length){ render(); return; }
+    const name = d.queue.shift(), p = d.players.find(x => x.name === name);
+    if(p && !p.online){ p.online = true; d.online++; d.joins++; }
+    render();
+    if(d.queue.length){ clearTimeout(joinTimer); joinTimer = setTimeout(joinNext, 200); }
+}
+
+function restartServer(){
+    shutdownServer(); setTimeout(startServer, 800);
+}
+
+function saveServerSettings(){
+    const d = getActiveData();
+    d.server.name = $("cfgName").value.trim() || d.name;
+    d.server.ip = $("cfgIP").value.trim() || d.ip;
+    d.server.port = Math.min(65535, Math.max(1, parseInt($("cfgPort").value) || 25565));
+    d.server.motd = $("cfgMotd").value;
+    d.server.onlineMode = $("cfgOnline").value === "true";
+    d.server.pvp = $("cfgPvp").value === "true";
+    d.server.chat = $("cfgChat").value === "true";
+    d.server.commands = $("cfgCommands").value === "true";
+    
+    const m = S.serversMeta.find(x => x.id === S.activeServerId);
+    if(m){ m.name = d.server.name; m.ip = d.server.ip; }
+    toast("⚙️ Ayarlar kaydedildi.");
+    render();
+}
+
+function saveGeneralSettings(){
+    const d = getActiveData();
+    d.autoIncome = $("cfgIncome").value === "true";
+    d.autoPlayers = $("cfgAutoPlayers").value === "true";
+    d.logLevel = $("cfgLog").value;
+    toast("⚙️ Genel ayarlar kaydedildi.");
+    render();
+}
+
+function renderServerSettings(){
+    const d = getActiveData();
+    if(!$("cfgName")) return;
+    $("cfgName").value = d.server.name;
+    $("cfgIP").value = d.server.ip;
+    $("cfgPort").value = d.server.port;
+    $("cfgMotd").value = d.server.motd;
+    $("cfgOnline").value = String(d.server.onlineMode);
+    $("cfgPvp").value = String(d.server.pvp);
+    $("cfgChat").value = String(d.server.chat);
+    $("cfgCommands").value = String(d.server.commands);
+    $("serverStateText").textContent = d.server.online ? "ONLINE" : "OFFLINE";
+    $("serverStateText").className = d.server.online ? "good" : "bad";
+    $("serverEndpoint").textContent = `${d.server.ip}:${d.server.port}`;
+    $("joinQueueCount").textContent = d.queue.length;
+    $("headIP").textContent = d.server.ip;
+    $("brandName").textContent = d.server.name + " Enterprise";
+    $("serverStatus").textContent = d.server.online ? "● ONLINE" : "● OFFLINE";
+    $("serverStatus").className = "pill " + (d.server.online ? "good" : "bad");
+}
+
+function renderMonitor(){
+    const d = getActiveData();
+    if(!$("monitorMetrics")) return;
+    const cpu = Math.min(99, Math.floor((d.online / Math.max(1, d.cpu)) * 6 + Math.random() * 8)),
+          ramUse = (d.online * .12).toFixed(1),
+          ramPct = Math.min(99, (ramUse / d.ram) * 100),
+          temp = Math.max(24, 42 - (d.cooling - 1) * 3 + Math.floor(d.online / 20));
+    
+    $("monitorMetrics").innerHTML = `<p>🧠 CPU: <b>${cpu}%</b></p><div class="bar"><div class="fill" style="width:${cpu}%"></div></div><p>🧮 RAM: <b>${ramUse}/${d.ram} GB</b> (${ramPct.toFixed(0)}%)</p><div class="bar"><div class="fill" style="width:${ramPct}%"></div></div><p>❄️ Sıcaklık: <b>${temp}°C</b></p>`;
+    $("networkMetrics").innerHTML = `<p>⬆️ Çıkış: <b>${d.networkOut} MB</b></p><p>⬇️ Giriş: <b>${d.networkIn} MB</b></p><p>🌐 NIC: <b>${(d.nic === 1 ? 1 : d.nic === 2 ? 10 : d.nic === 3 ? 40 : 100)} Gbps</b></p>`;
+    $("diskMetrics").innerHTML = `<p>💾 Kullanım: <b>${d.diskUsed.toFixed(1)}%</b></p><p>🚀 NVMe seviye: <b>${d.storage}</b></p>`;
+    $("securityMetrics").innerHTML = `<p>🛡️ AntiCheat: <b>${d.plugins.includes(11)?"AKTİF":"Pasif"}</b></p>`;
+}
+
+function optimize(){ toast("⚡ RAM Temizlendi!"); render(); }
+function restart(){ restartServer(); }
+function backup(){ const d=getActiveData(); d.backups++; saveNow(); toast("💾 Yedek alındı!"); render(); }
+
+/* --- TAM RENDER GÜNCELLEMESİ --- */
+function render(){
+    ensureHardware();
+    ensurePlayers();
+    const d = getActiveData();
+    const totMoney = calculateTotalMoney();
+
+    $("headTotalMoney").textContent = money(totMoney);
+    if($("dashTotalMoney")) $("dashTotalMoney").textContent = money(totMoney);
+
+    // RAM VE CPU
+    $("ramText").textContent = d.ram + " GB";
+    $("curRam").textContent = d.ram + " GB";
+    $("ramCost").textContent = money(d.ram * 350);
+    $("ramFill").style.width = Math.min(100, (d.ram / 32) * 100) + "%";
+    $("headRAM").textContent = `${(d.online * .12).toFixed(1)}/${d.ram} GB`;
+    
+    $("cpuText").textContent = d.cpu + " vCore";
+    $("curCPU").textContent = d.cpu + " vCore";
+    $("cpuCost").textContent = money(d.cpu * 850);
+    $("hwCpuModel").textContent = d.cpu >= 8 ? "AMD EPYC / Xeon" : "Intel Xeon E-2300";
+    $("cpuLoad").textContent = Math.min(99, Math.floor((d.online / (d.cpu * 1.4)) * 10)) + "%";
+
+    // DEPOLAMA
+    $("storageModel").textContent = d.storage >= 3 ? "NVMe SSD 2 TB" : d.storage >= 2 ? "NVMe SSD 1 TB" : "NVMe SSD 256 GB";
+    $("storageSpeed").textContent = d.storage;
+    $("storageCost").textContent = money(d.storage * 900);
+
+    // ANAKART
+    $("motherboardLevel").textContent = d.motherboard;
+    $("ramSlots").textContent = 2 + d.motherboard;
+    $("motherboardCost").textContent = money(d.motherboard * 1200);
+
+    // PSU
+    $("psuPower").textContent = (500 * d.psu) + "W";
+    $("psuRedundant").textContent = d.psu >= 2 ? "Redundant Çift PSU" : "Yok";
+    $("psuCost").textContent = money(d.psu * 750);
+
+    // NIC
+    $("nicSpeed").textContent = (d.nic === 1 ? 1 : d.nic === 2 ? 10 : d.nic === 3 ? 40 : 100) + " Gbps";
+    $("networkLoad").textContent = Math.min(99, Math.floor((d.online / Math.max(1, d.nic * 10)) * 10)) + "%";
+    $("nicCost").textContent = money(d.nic * 1000);
+
+    // SOĞUTMA
+    $("coolingLevel").textContent = d.cooling;
+    $("temperature").textContent = Math.max(24, 42 - (d.cooling - 1) * 3) + "°C";
+    $("coolingCost").textContent = money(d.cooling * 650);
+
+    // CHUNK
+    $("chunkValue").textContent = d.chunkDistance;
+    $("chunkSlider").value = d.chunkDistance;
+
+    // GENEL
+    $("online").textContent = String(d.online);
+    $("playerCapacity").textContent = getMaxPlayers();
+    $("capacityHint").textContent = getMaxPlayers();
+    $("onlineFill").style.width = Math.min(100, Math.max(6, d.online * 2)) + "%";
+
+    $("serverLevel").textContent = d.level;
+    $("xpText").textContent = `${d.xp}/100 XP`;
+    $("uptime").textContent = d.uptime + " dk";
+
+    $("spawnLv").textContent = d.spawn;
+    $("marketLv").textContent = d.market;
+    $("pvpLv").textContent = d.pvp;
+    $("spawnCost").textContent = money(worldBase.spawn * (d.spawn + 1));
+    $("marketCost").textContent = money(worldBase.market * (d.market + 1));
+    $("pvpCost").textContent = money(worldBase.pvp * (d.pvp + 1));
+
+    $("perPlayer").textContent = money(5 + d.eco * 2);
+
+    let tps = d.server.online ? Math.min(20, (18.5 + (d.cpu * .4) - (d.online / (d.ram * 3)))).toFixed(2) : "0.00";
+    if(d.online === 0 && d.server.online) tps = "20.00";
+    $("headTPS").textContent = tps;
+
+    $("health").innerHTML = `<p>⚡ TPS Performansı: <b class="${tps > 18 ? 'good' : 'bad'}">${tps}</b></p><p>🧠 RAM Tüketimi: <b>${((d.online * .12) / d.ram * 100).toFixed(1)}% (${(d.online * .12).toFixed(1)} GB)</b></p>`;
+
+    $("recentLogs").innerHTML = d.logs.slice(0, 5).map(x => `<div class="log">${x}</div>`).join("");
+    $("fullLogs").innerHTML = d.logs.map(x => `<div class="log">${x}</div>`).join("");
+
+    renderPlayers();
+    renderPlugins();
+    renderRanks();
+    renderShop();
+    renderQuests();
+    renderEvents();
+    renderStats();
+    renderServerSettings();
+    renderMonitor();
+    renderWorlds();
+    renderElectricity();
+    renderServers();
+    save();
+}
+
+function renderPlayers(){
+    const d = getActiveData();
+    ensurePlayers();
+    const q = (($("playerSearch") && $("playerSearch").value) || "").trim().toLowerCase();
+    const list = d.players.filter(p => !q || p.name.toLowerCase().includes(q) || p.rank.toLowerCase().includes(q));
+    $("playerTable").innerHTML = list.map(p => `<tr><td><b>${p.name}</b></td><td><span class="tag">${p.rank}</span></td><td>${p.level}</td><td>${money(p.money)}</td><td>${p.ping}ms</td><td class="${p.online ? 'good' : 'muted'}">${p.online ? '● Online' : '○ Offline'}</td><td><button class="btn" onclick="togglePlayer('${p.name}')">${p.online ? 'Kick' : 'Geri Al'}</button></td></tr>`).join("") || '<tr><td colspan="7" class="muted">Oyuncu bulunamadı.</td></tr>';
+}
+
+function togglePlayer(n){
+    const d = getActiveData();
+    const p = d.players.find(x => x.name === n);
+    if(!p || !d.server.online) return;
+    if(p.online){ p.online = false; d.online = Math.max(0, d.online - 1); }
+    else { p.online = true; d.online++; }
+    render();
+}
+
+function massReward(){
+    const d = getActiveData();
+    let totalCost = 50 * d.online;
+    if(spendTotalMoney(totalCost)){
+        d.players.filter(p => p.online).forEach(p => p.money += 50);
+        toast("🎁 Ödüller dağıtıldı.");
+        render();
+    } else toast("❌ Yeterli bakiye yok.");
+}
+
+function renderPlugins(){
+    const d = getActiveData();
+    $("pluginList").innerHTML = pluginData.map((p, i) => `<div class="item row"><div><b>${p[0]}</b><br><span class="muted">${p[1]}</span></div><button class="btn" ${d.plugins.includes(i) ? 'disabled' : ''} onclick="buyPlugin(${i})">${d.plugins.includes(i) ? '✓ Kurulu' : money(p[2])}</button></div>`).join("");
+}
+
+function buyPlugin(i){
+    const d = getActiveData();
+    let p = pluginData[i];
+    if(d.plugins.includes(i)) return;
+    if(spendTotalMoney(p[2])){
+        d.plugins.push(i);
+        toast(`🧩 ${p[0]} eklendi!`);
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function cmd(c){ $("consoleInput").value = c; runCommand(); }
+
+function runCommand(){
+    const d = getActiveData();
+    let c = $("consoleInput").value.trim();
+    if(!c) return;
+    log("> /" + c);
+    $("consoleInput").value = "";
+    toast("Komut çalıştırıldı.");
+    render();
+}
+
+function boostEconomy(){
+    const d = getActiveData();
+    const cost = 400 + d.eco * 250;
+    if(spendTotalMoney(cost)){
+        d.eco++;
+        toast("📈 Gelir oranı artırıldı!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+const worldNames = { spawn: "Spawn Yapısı", market: "Pazar Alanı", pvp: "PvP Arena" }, worldBase = { spawn: 500, market: 700, pvp: 900 };
+
+function upgradeWorld(type){
+    const d = getActiveData();
+    const lv = d[type] || 0, cost = worldBase[type] * (lv + 1);
+    if(spendTotalMoney(cost)){
+        d[type] = lv + 1;
+        toast(`🌍 ${worldNames[type]} geliştirildi!`);
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+const rankData = [["OYUNCU", "Başlangıç rütbesi", 0], ["VIP", "Özel prefix", 1200], ["MOD", "Moderasyon", 3000], ["ADMIN", "Yönetim", 7000]];
+
+function worldAction(action){
+    const d = getActiveData();
+    if(action === 'day') d.worldTime = 'day';
+    if(action === 'night') d.worldTime = 'night';
+    if(action === 'rain') d.weather = 'rain';
+    if(action === 'clear') d.weather = 'clear';
+    toast(`🌍 Dünya: ${action}`);
+    render();
+}
+
+function changeMobDensity(delta){
+    const d = getActiveData();
+    d.mobDensity = Math.max(0, Math.min(3, (d.mobDensity || 1) + delta));
+    render();
+}
+
+function createWorld(){
+    const d = getActiveData();
+    if(spendTotalMoney(600)){
+        const types = ['Survival', 'SkyBlock', 'Creative'], idx = d.worlds.length + 1;
+        d.worlds.push({ name: `world_${idx}`, type: types[idx % types.length], level: 1 });
+        toast(`🌍 Yeni dünya oluşturuldu.`);
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function renderWorlds(){
+    const d = getActiveData();
+    const el = $("worldList"); if(!el) return;
+    el.innerHTML = d.worlds.map((w, i) => `<div class="item row"><div><b>🌍 ${w.name}</b><br><span class="muted">${w.type} · Seviye ${w.level}</span></div><button class="btn" onclick="upgradeWorldInstance(${i})">⬆️ Geliştir $${500 * w.level}</button></div>`).join('');
+    $("worldTimeText").textContent = d.worldTime === 'night' ? 'Gece' : 'Gündüz';
+    $("worldWeatherText").textContent = d.weather === 'rain' ? 'Yağmur' : 'Açık';
+    $("mobDensityText").textContent = ['Kapalı', 'Az', 'Normal', 'Yüksek'][d.mobDensity] || 'Normal';
+}
+
+function upgradeWorldInstance(i){
+    const d = getActiveData();
+    const w = d.worlds[i], cost = 500 * w.level;
+    if(spendTotalMoney(cost)){
+        w.level++;
+        render();
+    } else toast('❌ Yeterli bakiye yok!');
+}
+
+function payElectricity(){
+    const d = getActiveData();
+    const bill = Math.ceil(d.electricity.bill || 0);
+    if(!bill) return toast('✅ Ödenecek fatura yok.');
+    if(spendTotalMoney(bill)){
+        d.electricity.bill = 0;
+        toast('⚡ Elektrik faturası ödendi!');
+        render();
+    } else toast(`❌ Yeterli bakiye yok.`);
+}
+
+function renderRanks(){
+    const el = $("rankList"); if(!el) return;
+    el.innerHTML = rankData.map(r => `<div class="item row"><div><b>👑 ${r[0]}</b><br><span class="muted">${r[1]}</span></div><button class="btn" onclick="buyRank('${r[0]}',${r[2]})">${r[2] === 0 ? "Ücretsiz" : money(r[2])}</button></div>`).join("");
+}
+
+function buyRank(rank, cost){
+    if(cost === 0) return;
+    if(spendTotalMoney(cost)){
+        toast(`👑 ${rank} açıldı!`);
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+const shopData = [["Elmas Kılıç", 450, "⚔️"], ["Elmas Zırh", 900, "🛡️"], ["Hız İksiri", 180, "🧪"]];
+function renderShop(){
+    const el = $("shopList"); if(!el) return;
+    el.innerHTML = shopData.map((x, i) => `<div class="item row"><div><b>${x[2]} ${x[0]}</b></div><button class="btn" onclick="buyShop(${i})">${money(x[1])}</button></div>`).join("");
+}
+
+function buyShop(i){
+    const d = getActiveData();
+    const x = shopData[i];
+    if(spendTotalMoney(x[1])){
+        toast(`🛒 ${x[0]} satın alındı!`);
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+const quests = [["İlk Geliştirme", "Bir donanım yükseltmesi yap.", 25, 250]];
+function renderQuests(){
+    const d = getActiveData();
+    const el = $("questList"); if(!el) return;
+    el.innerHTML = quests.map((q, i) => {
+        const done = d.storage > 1 || d.motherboard > 1 || d.psu > 1 || d.nic > 1 || d.cooling > 1, claimed = !!d.questClaimed[i];
+        return `<div class="item row"><div><b>📜 ${q[0]}</b><br><span class="muted">${q[1]} • ${money(q[3])}</span></div><button class="btn" ${(!done || claimed) ? "disabled" : ""} onclick="claimQuest(${i})">${claimed ? "✓ Alındı" : "Ödülü Al"}</button></div>`;
+    }).join("");
+}
+
+function claimQuest(i){
+    const d = getActiveData();
+    if(d.questClaimed[i]) return;
+    d.questClaimed[i] = true; d.money += quests[i][3];
+    toast("🎁 Görev ödülü alındı!");
+    render();
+}
+
+function renderEvents(){
+    const el = $("eventList"); if(!el) return;
+    el.innerHTML = `<div class="item row"><div><b>🎉 Hafta Sonu Etkinliği</b></div><button class="btn" onclick="startEvent(0)">Başlat ($500)</button></div>`;
+}
+
+function startEvent(i){
+    if(spendTotalMoney(500)){
+        toast("🎉 Etkinlik başlatıldı!");
+        render();
+    } else toast("❌ Yeterli bakiye yok!");
+}
+
+function renderElectricity(){
+    const d = getActiveData();
+    const el = $("electricMetrics"); if(!el) return;
+    el.innerHTML = `<p>Birikmiş fatura: <b class="gold">${money(d.electricity.bill || 0)}</b></p>`;
+}
+
+function triggerRandomEvent(manual = false){
+    const d = getActiveData();
+    d.money += 200;
+    toast("🎲 Rastgele olay yaşandı (+$200)");
+    render();
+}
+
+function renderStats(){
+    const d = getActiveData();
+    const el = $("statsTable"); if(!el) return;
+    el.innerHTML = `<tbody><tr><td>Çevrimiçi oyuncu</td><td>${d.online}</td></tr><tr><td>Uptime</td><td>${d.uptime} dk</td></tr></tbody>`;
+}
+
+function exportSave(){
+    const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "veyrion_server_save.json";
+    a.click();
+}
+
+function resetGame(){
+    if(confirm("Tüm verileri sıfırlamak istiyor musun?")){
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+setInterval(() => saveNow(), 1000);
+
+setInterval(() => {
+    for(let id in S.serversData){
+        const d = S.serversData[id];
+        if(d.server && d.server.online){
+            d.uptime++;
+            let income = Math.max(1, Math.floor(d.online * (4 + d.eco)));
+            d.money += income;
+            d.electricity.bill += 1.5;
+        }
+    }
+    render();
+}, 4000);
+
+render();
+</script>
+</body>
+</html>
